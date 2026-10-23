@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZiN Speed Meter</title>
+<meta name="theme-color" content="#0f1a12">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f1a12;--card:#17251b;--line:#24382a;--text:#eaf5ec;--mute:#8aa593;--green:#2ecc71;--blue:#3b9eff;--amber:#f5a623;--on:#06210f}
+:root[data-theme=light]{--bg:#f1f6f2;--card:#ffffff;--line:#dbe6dd;--text:#12301b;--mute:#5d7566;--green:#1fa85a;--blue:#1e7ee0;--amber:#d98200;--on:#ffffff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 16px calc(88px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px}
+header h1{font-size:19px;display:flex;align-items:center;gap:10px}
+header img{width:34px;height:34px;border-radius:50%}
+#install{display:none;background:var(--green);color:var(--on);border:0;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+.status{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.dot.off{background:#e55}
+#banner{background:#4a2a10;color:#ffd9a8;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;display:flex;justify-content:space-between;gap:10px}
+#banner[hidden]{display:none}
+#banner button{background:none;border:0;color:inherit;font-size:16px;cursor:pointer}
+h2{font-size:13px;color:var(--mute);margin:22px 0 8px;font-weight:600;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.05em}
+h2 button{background:none;border:0;color:var(--mute);font-size:12px;cursor:pointer;text-decoration:underline;text-transform:none;letter-spacing:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card small{color:var(--mute);font-size:12px;display:block}
+.card b{font-size:21px;font-variant-numeric:tabular-nums}
+.card span{color:var(--mute);font-size:12px;margin-left:3px}
+.card .sub{display:block;margin:3px 0 0;font-size:11px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid3 .card{padding:11px}
+.grid3 .card b{font-size:17px}
+.dl b{color:var(--blue)}.ul b{color:var(--amber)}
+/* live widget look */
+.lw{background:#2a2a2a;border-radius:14px;padding:22px 26px;font:700 clamp(24px,8vw,34px) "Courier New",monospace;line-height:1.65;border:1px solid #3a3a3a}
+.lw .r{display:flex;gap:12px;white-space:nowrap}
+.lw .d{color:#7be88a}.lw .u{color:#ffa31a}
+.lw i{font-style:normal}
+.btns{display:flex;gap:10px;margin-top:12px}
+button.pri,button.sec{flex:1;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid var(--line)}
+button.pri{background:var(--green);color:var(--on);border-color:var(--green)}
+button.sec{background:var(--card);color:var(--text)}
+button:disabled{opacity:.6}
+.hint{color:var(--mute);font-size:12px;margin-top:10px;line-height:1.5}
+.note{color:var(--mute);font-size:11px;line-height:1.55;margin-top:16px}
+/* test */
+.gauge{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 16px;text-align:center}
+.phase{font-size:13px;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;height:18px}
+.big{font-size:60px;font-weight:800;line-height:1.1;margin-top:8px;font-variant-numeric:tabular-nums}
+.unit{color:var(--mute);font-size:15px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin:16px 6px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--green);transition:width .2s}
+#go{margin-top:18px;width:100%;padding:15px;border:0;border-radius:12px;background:var(--green);color:var(--on);font-size:17px;font-weight:800;cursor:pointer}
+.row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.row:last-child{border:0}
+.row em{font-style:normal;color:var(--mute)}
+.hist .item{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:6px;font-size:12px;padding:9px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.hist .item:last-child{border:0}
+.hist .item span:first-child{color:var(--mute)}
+.hist .item.u5{grid-template-columns:1.3fr 1fr 1fr 1fr .8fr}
+.empty{color:var(--mute);font-size:13px;padding:6px 0}
+/* usage */
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;padding:9px;border:0;background:none;color:var(--mute);font-weight:700;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--green);color:var(--on)}
+.chart{display:flex;gap:6px;align-items:flex-end;height:170px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.col small{font-size:9px;margin-bottom:3px;white-space:nowrap}
+.bar2{width:100%;height:120px;display:flex;align-items:flex-end;justify-content:center}
+.stack{width:70%;max-width:34px;min-height:2px;border-radius:5px 5px 0 0;overflow:hidden;display:flex;flex-direction:column;background:var(--line)}
+.stack i{display:block;width:100%}
+.stack i.d{background:var(--blue)}.stack i.u{background:var(--amber)}
+.col em{font-style:normal;font-size:10px;color:var(--mute);margin-top:5px;white-space:nowrap}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--mute);margin-top:10px;justify-content:center}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+/* settings */
+.set{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.set:last-child{border:0}
+.set small{display:block;color:var(--mute);font-size:11px;margin-top:2px;line-height:1.4}
+select,input[type=number]{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;max-width:150px}
+input[type=number]{width:100px}
+input[type=checkbox]{width:42px;height:24px;accent-color:var(--green)}
+.danger{color:#ff7b7b}
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav button{flex:1;background:none;border:0;color:var(--mute);padding:8px 2px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button span{font-size:19px;line-height:1}
+nav button.on{color:var(--green)}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;max-width:90%;display:none;z-index:9;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><img src="icon-192.png" alt="">ZiN Speed Meter</h1>
+    <button id="install">Install</button>
+  </header>
+  <div class="status"><span class="dot" id="dot"></span><span id="online">Online</span></div>
+  <div id="banner" hidden><span id="bannerText"></span><button id="bannerX" aria-label="Close">✕</button></div>
+
+  <!-- LIVE -->
+  <section class="tab" id="tab-live">
+    <div class="lw"><div class="r d"><i>↓</i><b id="ld">–</b></div><div class="r u"><i>↑</i><b id="lu">–</b></div></div>
+    <div class="btns">
+      <button id="monBtn" class="pri">Start monitor</button>
+      <button id="popBtn" class="sec">Pop-out widget</button>
+    </div>
+    <p class="hint" id="monInfo"></p>
+    <h2>Today</h2>
+    <div class="grid3" id="todayCards"></div>
+    <p class="note">The live numbers are an estimate: the app downloads and uploads a small sample at your chosen interval and measures how fast it went. A web app cannot read your device's real network traffic, so these values will not match Windows or Task Manager.</p>
+  </section>
+
+  <!-- TEST -->
+  <section class="tab" id="tab-test" hidden>
+    <div class="gauge">
+      <div class="phase" id="phase">Ready</div>
+      <div class="big"><span id="speed">0.0</span></div>
+      <div class="unit">Mbps</div>
+      <div class="bar"><i id="prog"></i></div>
+      <button id="go">Start Test</button>
+    </div>
+    <div class="grid">
+      <div class="card"><small>Ping</small><b id="ping">–</b><span>ms</span></div>
+      <div class="card"><small>Jitter</small><b id="jitter">–</b><span>ms</span></div>
+      <div class="card dl"><small>Download</small><b id="dl">–</b><span>Mbps</span></div>
+      <div class="card ul"><small>Upload</small><b id="ul">–</b><span>Mbps</span></div>
+    </div>
+    <h2>Connection (browser-reported)</h2>
+    <div class="card" id="conn"></div>
+    <h2>Test History <button id="clearTests">Clear</button></h2>
+    <div class="card hist" id="hist"></div>
+    <p class="note">Full test uses 4 parallel streams against Cloudflare's speed servers; the first 1.5 s is ignored as ramp-up. It uses a lot of data (often hundreds of MB on a fast line), and that is counted in your usage.</p>
+  </section>
+
+  <!-- USAGE -->
+  <section class="tab" id="tab-usage" hidden>
+    <div class="grid3" id="sumCards"></div>
+    <h2>History</h2>
+    <div class="seg" id="seg">
+      <button data-r="day" class="on">Daily</button>
+      <button data-r="week">Weekly</button>
+      <button data-r="month">Monthly</button>
+    </div>
+    <div class="card">
+      <div class="chart" id="chart"></div>
+      <div class="legend"><span><b style="background:var(--blue)"></b>Download</span><span><b style="background:var(--amber)"></b>Upload</span></div>
+    </div>
+    <div class="card hist" id="usageTable" style="margin-top:10px"></div>
+    <div class="btns"><button id="csv" class="sec">Export CSV</button></div>
+    <p class="note">Important: these totals count only the data this app itself transfers (monitor samples + speed tests), not everything your device uses. Payload bytes only; protocol overhead is not included. History is stored in this browser on this device, and it is not shared between your phone and PC.</p>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="tab" id="tab-settings" hidden>
+    <h2>Live monitor</h2>
+    <div class="card">
+      <label class="set"><span>Check every<small>Shorter = more live, but uses more data</small></span>
+        <select data-k="interval" data-n="1">
+          <option value="3">3 seconds</option><option value="5">5 seconds</option><option value="10">10 seconds</option>
+          <option value="30">30 seconds</option><option value="60">1 minute</option>
+        </select></label>
+      <label class="set"><span>Download sample</span>
+        <select data-k="downKB" data-n="1">
+          <option value="128">128 KB</option><option value="256">256 KB</option><option value="512">512 KB</option>
+          <option value="1024">1 MB</option><option value="2048">2 MB</option><option value="5120">5 MB</option>
+        </select></label>
+      <label class="set"><span>Upload sample</span>
+        <select data-k="upKB" data-n="1">
+          <option value="32">32 KB</option><option value="64">64 KB</option><option value="128">128 KB</option>
+          <option value="256">256 KB</option><option value="512">512 KB</option><option value="1024">1 MB</option>
+        </select></label>
+      <div class="set"><span>Estimated data use<small>While the monitor is running</small></span><b id="est">–</b></div>
+      <label class="set"><span>Start monitor when app opens</span><input type="checkbox" data-k="autostart"></label>
+      <label class="set"><span>Daily data limit (MB)<small>Stops the monitor at this app-usage. 0 = off</small></span><input type="number" min="0" step="50" data-k="limitMB" data-n="1"></label>
+    </div>
+
+    <h2>Display</h2>
+    <div class="card">
+      <label class="set"><span>Speed unit</span>
+        <select data-k="unit"><option value="auto">KB/s · MB/s</option><option value="mbps">Mbps</option></select></label>
+      <label class="set"><span>Widget size</span>
+        <select data-k="wFont" data-n="1"><option value="18">Small</option><option value="22">Medium</option><option value="28">Large</option><option value="34">Extra large</option></select></label>
+      <label class="set"><span>Widget theme</span>
+        <select data-k="wTheme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+      <label class="set"><span>App theme</span>
+        <select data-k="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+    </div>
+
+    <h2>Phone &amp; background</h2>
+    <div class="card">
+      <label class="set"><span>Speed in notification<small>Shows ↓ ↑ in your notification shade (needs permission)</small></span><input type="checkbox" data-k="notif"></label>
+      <label class="set"><span>Keep screen on while monitoring<small>Helps on phones, uses battery</small></span><input type="checkbox" data-k="awake"></label>
+    </div>
+
+    <h2>Speed test</h2>
+    <div class="card">
+      <label class="set"><span>Test length</span>
+        <select data-k="testSec" data-n="1"><option value="6">Short (6 s)</option><option value="10">Normal (10 s)</option><option value="15">Long (15 s)</option></select></label>
+    </div>
+
+    <h2>Data</h2>
+    <div class="card">
+      <div class="set"><span>Reset usage history</span><button class="sec danger" id="resetUsage" style="flex:none;padding:8px 14px">Reset</button></div>
+      <div class="set"><span>Reset all settings</span><button class="sec danger" id="resetSettings" style="flex:none;padding:8px 14px">Reset</button></div>
+    </div>
+    <p class="note">Floating widget: Chrome/Edge on desktop gives a real always-on-top window. On Android Chrome it uses picture-in-picture. Both only update while this app keeps running; phones may pause web apps in the background.</p>
+  </section>
+</div>
+
+<nav>
+  <button data-tab="live" class="on"><span>⚡</span>Live</button>
+  <button data-tab="test"><span>🚀</span>Test</button>
+  <button data-tab="usage"><span>📊</span>Usage</button>
+  <button data-tab="settings"><span>⚙️</span>Settings</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DOWN = 'https://speed.cloudflare.com/__down?bytes=';
+const UP = 'https://speed.cloudflare.com/__up';
+const STREAMS = 4, WARMUP = 1500;
+
+/* ================= storage ================= */
+const load = (k, f) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? f : v; } catch { return f; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const DEF = { interval: 30, downKB: 256, upKB: 64, unit: 'auto', wFont: 22, wTheme: 'dark', theme: 'dark',
+              limitMB: 0, notif: false, awake: false, autostart: false, testSec: 10 };
+let S = Object.assign({}, DEF, load('zin-settings', {}));
+let usage = load('zin-usage', {});
+
+/* ================= helpers ================= */
+const pad = n => String(n).padStart(2, '0');
+const dayKey = (d = new Date()) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parseKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const mondayOf = dt => { const x = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const mbps = (bytes, ms) => bytes * 8 / 1e6 / (ms / 1000);
+const fmtM = v => v >= 100 ? v.toFixed(0) : v.toFixed(1);
+function fmtBytes(n){
+  if (!n || n < 1) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
+  while (n >= 1024 && i < 4) { n /= 1024; i++; }
+  return (i === 0 ? n.toFixed(0) : i === 1 ? n.toFixed(1) : n.toFixed(2)) + ' ' + u[i];
+}
+function fmtSpeed(bps){            // bps = bytes per second
+  if (bps == null || isNaN(bps)) return '–';
+  if (S.unit === 'mbps') return (bps * 8 / 1e6).toFixed(2) + ' Mbps';
+  if (bps >= 1048576) return (bps / 1048576).toFixed(2) + ' MB/s';
+  if (bps >= 1024) return (bps / 1024).toFixed(1) + ' KB/s';
+  return bps.toFixed(0) + ' B/s';
+}
+function fmtDur(s){
+  s = Math.round(s || 0);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  return m < 60 ? m + 'm' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+}
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 4500); }
+function banner(msg){ $('bannerText').textContent = msg; $('banner').hidden = false; }
+$('bannerX').onclick = () => $('banner').hidden = true;
+
+/* ================= usage tracking ================= */
+let persistT;
+function persist(){ clearTimeout(persistT); persistT = setTimeout(flush, 800); }
+function flush(){
+  const keys = Object.keys(usage).sort();
+  if (keys.length > 400) keys.slice(0, keys.length - 400).forEach(k => delete usage[k]);
+  save('zin-usage', usage);
+}
+function addUsage(d, u, s = 0){
+  const k = dayKey(); const r = usage[k] || (usage[k] = { d: 0, u: 0, s: 0 });
+  r.d += d; r.u += u; r.s += s;
+  persist(); checkLimit();
+  renderToday(); if (tab === 'usage') renderUsage();
+}
+let limitDay = null;
+function overLimit(){
+  if (!S.limitMB) return false;
+  const r = usage[dayKey()];
+  return !!r && (r.d + r.u) >= S.limitMB * 1048576;
+}
+function checkLimit(){
+  if (limitDay === dayKey() || !overLimit()) return;
+  limitDay = dayKey();
+  if (mon.on) { stopMon(); banner('Daily data limit reached. Monitor stopped.'); }
+}
+
+/* ================= measuring samples ================= */
+const blobCache = {};
+function blobOf(size){
+  if (blobCache[size]) return blobCache[size];
+  const buf = new Uint8Array(size);
+  for (let o = 0; o < size; o += 65536) crypto.getRandomValues(buf.subarray(o, Math.min(o + 65536, size)));
+  return blobCache[size] = new Blob([buf]);
+}
+async function sampleDown(bytes){
+  let total = 0, after = 0, tFirst = null; const t0 = performance.now();
+  try {
+    const r = await fetch(DOWN + bytes + '&r=' + Math.random(), { cache: 'no-store' });
+    const rd = r.body.getReader();
+    for (;;) {
+      const { done, value } = await rd.read(); if (done) break;
+      if (tFirst === null) tFirst = performance.now(); else after += value.length;
+      total += value.length;
+    }
+    const t1 = performance.now(), dt = t1 - (tFirst ?? t0);
+    return after > 0 && dt >= 5 ? after / (dt / 1000) : total / ((t1 - t0) / 1000);
+  } finally { addUsage(total, 0); }
+}
+function sampleUp(bytes){
+  return new Promise((resolve, reject) => {
+    const blob = blobOf(bytes), x = new XMLHttpRequest(); let sent = 0, t1 = 0; const t0 = performance.now();
+    x.open('POST', UP + '?r=' + Math.random()); x.timeout = 20000;
+    x.upload.onprogress = e => { sent = e.loaded; };
+    x.upload.onload = () => { t1 = performance.now(); sent = blob.size; };
+    x.onload = () => { addUsage(0, sent); resolve(blob.size / (((t1 || performance.now()) - t0) / 1000)); };
+    x.onerror = x.onabort = x.ontimeout = () => { addUsage(0, sent); reject(new Error('upload failed')); };
+    x.send(blob);
+  });
+}
+
+/* ================= live monitor ================= */
+const mon = { on: false, timer: null, last: 0, dl: null, ul: null, busy: false };
+let testRunning = false;
+async function tick(){
+  if (!mon.on || mon.busy || testRunning) return;
+  if (!navigator.onLine) { mon.dl = mon.ul = null; renderLive(); updateWidget(); return; }
+  mon.busy = true;
+  const now = Date.now();
+  addUsage(0, 0, Math.min((now - mon.last) / 1000, S.interval * 2 + 10)); mon.last = now;
+  try { mon.dl = await sampleDown(S.downKB * 1024); } catch { mon.dl = null; }
+  try { mon.ul = await sampleUp(S.upKB * 1024); } catch { mon.ul = null; }
+  mon.busy = false;
+  renderLive(); updateWidget(); updateNotif();
+}
+function startMon(){
+  if (mon.on) return;
+  if (overLimit()) { banner('Daily data limit already reached. Raise it in Settings to monitor.'); return; }
+  mon.on = true; mon.last = Date.now();
+  tick(); mon.timer = setInterval(tick, S.interval * 1000);
+  setAwake(); renderLive();
+}
+function stopMon(){
+  mon.on = false; clearInterval(mon.timer); mon.timer = null; mon.busy = false;
+  setAwake(); clearNotif(); renderLive();
+}
+$('monBtn').onclick = () => mon.on ? stopMon() : startMon();
+
+let wl = null;
+async function setAwake(){
+  try {
+    const want = S.awake && mon.on && 'wakeLock' in navigator;
+    if (want && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); }
+    else if (!want && wl) { await wl.release(); wl = null; }
+  } catch {}
+}
+
+/* ================= notification ================= */
+async function updateNotif(){
+  if (!S.notif || !mon.on || !('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('ZiN Speed Meter', {
+      body: '↓ ' + fmtSpeed(mon.dl) + '    ↑ ' + fmtSpeed(mon.ul),
+      tag: 'zin-speed', renotify: false, silent: true, requireInteraction: true,
+      icon: 'icon-192.png', badge: 'icon-192.png'
+    });
+  } catch {}
+}
+async function clearNotif(){
+  try { const reg = await navigator.serviceWorker.ready; (await reg.getNotifications({ tag: 'zin-speed' })).forEach(n => n.close()); } catch {}
+}
+async function enableNotif(){
+  if (!('Notification' in window)) { toast('Notifications are not supported in this browser.'); S.notif = false; }
+  else {
+    const p = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    if (p !== 'granted') { toast('Notification permission was not granted.'); S.notif = false; }
+  }
+  save('zin-settings', S); syncSettingsUI(); updateNotif();
+}
+
+/* ================= floating widget ================= */
+const pip = {};
+function widgetCSS(){
+  const dark = S.wTheme === 'dark';
+  return `body{margin:0;display:flex;align-items:center;height:100vh;background:${dark ? '#2a2a2a' : '#f4f4f4'};font:700 ${S.wFont}px "Courier New",monospace;overflow:hidden}
+#w{padding:0 16px;width:100%}.r{display:flex;gap:10px;line-height:1.6;white-space:nowrap}i{font-style:normal}
+.d{color:${dark ? '#7be88a' : '#1a9c3a'}}.u{color:${dark ? '#ffa31a' : '#d97f00'}}`;
+}
+function drawCanvas(d, u){
+  const c = pip.canvas, g = c.getContext('2d'), dark = S.wTheme === 'dark';
+  g.fillStyle = dark ? '#2a2a2a' : '#f4f4f4'; g.fillRect(0, 0, c.width, c.height);
+  g.font = 'bold 40px "Courier New",monospace'; g.textBaseline = 'middle';
+  g.fillStyle = dark ? '#7be88a' : '#1a9c3a'; g.fillText('↓ ' + d, 24, 50);
+  g.fillStyle = dark ? '#ffa31a' : '#d97f00'; g.fillText('↑ ' + u, 24, 112);
+}
+function updateWidget(){
+  const d = fmtSpeed(mon.dl), u = fmtSpeed(mon.ul);
+  if (pip.win) { const a = pip.win.document.getElementById('wd'), b = pip.win.document.getElementById('wu'); if (a) a.textContent = d; if (b) b.textContent = u; }
+  if (pip.canvas) drawCanvas(d, u);
+}
+function restyleWidget(){ if (pip.style) pip.style.textContent = widgetCSS(); }
+function closeWidget(){
+  try { if (pip.win) pip.win.close(); } catch {}
+  try { if (pip.video && document.pictureInPictureElement === pip.video) document.exitPictureInPicture(); } catch {}
+  if (pip.video) pip.video.remove();
+  clearInterval(pip.timer);
+  for (const k of Object.keys(pip)) delete pip[k];
+  $('popBtn').textContent = 'Pop-out widget';
+}
+async function openWidget(){
+  if (pip.win || pip.canvas) { closeWidget(); return; }
+  try {
+    if ('documentPictureInPicture' in window) {
+      const w = await documentPictureInPicture.requestWindow({ width: Math.round(S.wFont * 10 + 50), height: Math.round(S.wFont * 4.2 + 30) });
+      const st = w.document.createElement('style'); st.textContent = widgetCSS(); w.document.head.append(st);
+      w.document.body.innerHTML = '<div id="w"><div class="r d"><i>↓</i><span id="wd">–</span></div><div class="r u"><i>↑</i><span id="wu">–</span></div></div>';
+      pip.win = w; pip.style = st;
+      w.addEventListener('pagehide', () => { if (pip.win === w) closeWidget(); });
+    } else if (document.pictureInPictureEnabled) {
+      const c = document.createElement('canvas'); c.width = 360; c.height = 160;
+      const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.srcObject = c.captureStream(2);
+      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+      document.body.appendChild(v);
+      pip.canvas = c; pip.video = v; drawCanvas(fmtSpeed(mon.dl), fmtSpeed(mon.ul));
+      await v.play(); await v.requestPictureInPicture();
+      v.addEventListener('leavepictureinpicture', closeWidget);
+      pip.timer = setInterval(updateWidget, 1000);
+    } else {
+      toast('This browser cannot show a floating widget. Use Chrome or Edge.'); return;
+    }
+    $('popBtn').textContent = 'Close widget';
+    if (!mon.on) startMon();
+    updateWidget();
+  } catch (e) { closeWidget(); toast('Could not open the widget: ' + (e.message || e)); }
+}
+$('popBtn').onclick = openWidget;
+
+/* ================= rendering: live ================= */
+function estPerHour(){ return (S.downKB + S.upKB) * 1024 / S.interval * 3600; }
+function renderEst(){ $('est').textContent = '≈ ' + fmtBytes(estPerHour()) + ' / hour'; }
+function card(label, big, sub, sub2){ return `<div class="card"><small>${label}</small><b>${big}</b><span class="sub">${sub}</span>${sub2 ? `<span class="sub">${sub2}</span>` : ''}</div>`; }
+function renderToday(){
+  const r = usage[dayKey()] || { d: 0, u: 0, s: 0 };
+  $('todayCards').innerHTML = card('Total', fmtBytes(r.d + r.u), '&nbsp;') + card('↓ Download', fmtBytes(r.d), '&nbsp;') + card('↑ Upload', fmtBytes(r.u), 'Active ' + fmtDur(r.s));
+}
+function renderLive(){
+  $('ld').textContent = fmtSpeed(mon.dl); $('lu').textContent = fmtSpeed(mon.ul);
+  $('monBtn').textContent = mon.on ? 'Stop monitor' : 'Start monitor';
+  $('monInfo').textContent = mon.on
+    ? `Monitoring every ${S.interval} s · about ${fmtBytes(estPerHour())} per hour of mobile data. Change in Settings.`
+    : 'Monitor is off. Start it to see live speed (it uses a little data while running).';
+}
+
+/* ================= rendering: usage ================= */
+let tab = 'live', range = 'day';
+function buckets(kind){
+  const out = [], now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (kind === 'day') {
+    for (let i = 6; i >= 0; i--) { const dt = new Date(today); dt.setDate(dt.getDate() - i);
+      out.push({ key: dayKey(dt), label: dt.toLocaleDateString([], { weekday: 'short' }), full: dt.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) }); }
+  } else if (kind === 'week') {
+    const m0 = mondayOf(today);
+    for (let i = 7; i >= 0; i--) { const dt = new Date(m0); dt.setDate(dt.getDate() - 7 * i);
+      out.push({ key: dayKey(dt), label: dt.getDate() + '/' + (dt.getMonth() + 1), full: 'Week of ' + dt.toLocaleDateString([], { day: 'numeric', month: 'short' }) }); }
+  } else {
+    for (let i = 5; i >= 0; i--) { const dt = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      out.push({ key: dt.getFullYear() + '-' + pad(dt.getMonth() + 1), label: dt.toLocaleDateString([], { month: 'short' }), full: dt.toLocaleDateString([], { month: 'long', year: 'numeric' }) }); }
+  }
+  out.forEach(b => { b.d = 0; b.u = 0; b.s = 0; });
+  const idx = Object.fromEntries(out.map(b => [b.key, b]));
+  for (const k in usage) {
+    const bk = kind === 'day' ? k : kind === 'week' ? dayKey(mondayOf(parseKey(k))) : k.slice(0, 7);
+    const b = idx[bk]; if (b) { b.d += usage[k].d; b.u += usage[k].u; b.s += usage[k].s; }
+  }
+  return out;
+}
+function renderUsage(){
+  const last = a => a[a.length - 1];
+  const t = usage[dayKey()] || { d: 0, u: 0, s: 0 }, w = last(buckets('week')), m = last(buckets('month'));
+  $('sumCards').innerHTML =
+    card('Today', fmtBytes(t.d + t.u), '↓ ' + fmtBytes(t.d) + ' ↑ ' + fmtBytes(t.u), fmtDur(t.s)) +
+    card('This week', fmtBytes(w.d + w.u), '↓ ' + fmtBytes(w.d) + ' ↑ ' + fmtBytes(w.u), fmtDur(w.s)) +
+    card('This month', fmtBytes(m.d + m.u), '↓ ' + fmtBytes(m.d) + ' ↑ ' + fmtBytes(m.u), fmtDur(m.s));
+  const b = buckets(range), max = Math.max(1, ...b.map(x => x.d + x.u));
+  $('chart').innerHTML = b.map(x => {
+    const tot = x.d + x.u, h = tot / max * 100, dh = tot ? x.d / tot * 100 : 0;
+    return `<div class="col"><small>${tot ? fmtBytes(tot) : ''}</small><div class="bar2"><div class="stack" style="height:${tot ? h : 0}%"><i class="u" style="height:${100 - dh}%"></i><i class="d" style="height:${dh}%"></i></div></div><em>${x.label}</em></div>`;
+  }).join('');
+  $('usageTable').innerHTML = '<div class="item u5"><span>Period</span><span>Down</span><span>Up</span><span>Total</span><span>Time</span></div>' +
+    b.slice().reverse().map(x => `<div class="item u5"><span>${x.full}</span><span>${fmtBytes(x.d)}</span><span>${fmtBytes(x.u)}</span><span>${fmtBytes(x.d + x.u)}</span><span>${fmtDur(x.s)}</span></div>`).join('');
+}
+document.querySelectorAll('#seg button').forEach(bt => bt.onclick = () => {
+  range = bt.dataset.r;
+  document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('on', x === bt));
+  renderUsage();
+});
+$('csv').onclick = () => {
+  const rows = ['date,download_bytes,upload_bytes,total_bytes,active_seconds'];
+  Object.keys(usage).sort().forEach(k => { const r = usage[k]; rows.push([k, Math.round(r.d), Math.round(r.u), Math.round(r.d + r.u), Math.round(r.s)].join(',')); });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+  a.download = 'zin-speed-usage.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+/* ================= tabs ================= */
+function showTab(t){
+  tab = t;
+  document.querySelectorAll('.tab').forEach(s => s.hidden = s.id !== 'tab-' + t);
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  if (t === 'usage') renderUsage();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+/* ================= settings ================= */
+function syncSettingsUI(){
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const v = S[el.dataset.k];
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = String(v);
+  });
+  renderEst();
+}
+function applySettings(k){
+  document.documentElement.dataset.theme = S.theme;
+  document.querySelector('meta[name=theme-color]').content = S.theme === 'light' ? '#f1f6f2' : '#0f1a12';
+  if (k === 'interval' && mon.on) { clearInterval(mon.timer); mon.timer = setInterval(tick, S.interval * 1000); }
+  if (k === 'awake') setAwake();
+  if (k === 'notif') { if (S.notif) enableNotif(); else clearNotif(); }
+  if (k === 'wFont' || k === 'wTheme') restyleWidget();
+  if (k === 'limitMB') limitDay = null;
+  renderEst(); renderLive(); renderToday(); updateWidget();
+}
+document.querySelectorAll('[data-k]').forEach(el => el.onchange = () => {
+  const k = el.dataset.k;
+  S[k] = el.type === 'checkbox' ? el.checked : el.dataset.n ? Math.max(0, Number(el.value) || 0) : el.value;
+  save('zin-settings', S); applySettings(k);
+});
+$('resetUsage').onclick = () => { if (confirm('Delete all usage history on this device?')) { usage = {}; flush(); renderToday(); renderUsage(); toast('Usage history cleared.'); } };
+$('resetSettings').onclick = () => { if (confirm('Reset all settings to default?')) { S = Object.assign({}, DEF); save('zin-settings', S); syncSettingsUI(); applySettings(); restyleWidget(); toast('Settings reset.'); } };
+
+/* ================= online status & connection info ================= */
+function setOnline(){ const on = navigator.onLine; $('online').textContent = on ? 'Online' : 'Offline'; $('dot').classList.toggle('off', !on); }
+addEventListener('online', setOnline); addEventListener('offline', setOnline); setOnline();
+function renderConn(){
+  const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection, rows = [];
+  if (c) {
+    if (c.effectiveType) rows.push(['Type (estimate)', c.effectiveType.toUpperCase()]);
+    if (c.type) rows.push(['Medium', c.type]);
+    if (c.downlink != null) rows.push(['Downlink (estimate)', c.downlink + ' Mbps']);
+    if (c.rtt != null) rows.push(['RTT (estimate)', c.rtt + ' ms']);
+    if (c.saveData != null) rows.push(['Data saver', c.saveData ? 'On' : 'Off']);
+  }
+  $('conn').innerHTML = rows.length ? rows.map(r => `<div class="row"><em>${r[0]}</em><span>${r[1]}</span></div>`).join('')
+    : '<div class="empty">Not supported by this browser (works in Chrome/Edge/Android).</div>';
+}
+renderConn();
+const nc = navigator.connection; if (nc && nc.addEventListener) nc.addEventListener('change', renderConn);
+
+/* ================= full speed test ================= */
+function setPhase(t, p){ $('phase').textContent = t; $('prog').style.width = p + '%'; }
+async function pingTest(){
+  const times = [];
+  for (let i = 0; i < 11; i++) {
+    const t0 = performance.now();
+    try { await fetch(DOWN + '0&r=' + Math.random(), { cache: 'no-store' }); } catch { throw new Error('Cannot reach test server'); }
+    if (i > 0) times.push(performance.now() - t0);
+    setPhase('Ping', i * 3);
+  }
+  const sorted = [...times].sort((a, b) => a - b), median = sorted[Math.floor(sorted.length / 2)];
+  let j = 0; for (let i = 1; i < times.length; i++) j += Math.abs(times[i] - times[i - 1]);
+  return { ping: median, jitter: j / (times.length - 1) };
+}
+async function downloadTest(){
+  const DL_MS = S.testSec * 1000, ctrl = new AbortController(), start = performance.now();
+  let total = 0, warmBytes = 0, warmAt = null, live = 0;
+  const tick2 = setInterval(() => {
+    const now = performance.now() - start;
+    if (now >= WARMUP) { if (warmAt === null) { warmAt = now; warmBytes = total; } else live = mbps(total - warmBytes, now - warmAt); $('speed').textContent = fmtM(live); }
+    setPhase('Download', 30 + Math.min(now / DL_MS, 1) * 35);
+  }, 200);
+  const stopT = setTimeout(() => ctrl.abort(), DL_MS);
+  const worker = async () => {
+    while (!ctrl.signal.aborted) {
+      try {
+        const r = await fetch(DOWN + 50000000 + '&r=' + Math.random(), { cache: 'no-store', signal: ctrl.signal });
+        const rd = r.body.getReader();
+        for (;;) { const { done, value } = await rd.read(); if (done) break; total += value.length; }
+      } catch { break; }
+    }
+  };
+  await Promise.all(Array.from({ length: STREAMS }, worker));
+  clearTimeout(stopT); clearInterval(tick2);
+  addUsage(total, 0, 0);
+  const end = performance.now() - start;
+  return warmAt === null || end - warmAt < 1000 ? mbps(total, end) : mbps(total - warmBytes, end - warmAt);
+}
+async function uploadTest(){
+  const UL_MS = S.testSec * 800, blob = blobOf(4 * 1024 * 1024), start = performance.now(), loaded = new Array(STREAMS).fill(0);
+  let done = 0, warmBytes = 0, warmAt = null, live = 0, stop = false; const xhrs = [];
+  const sum = () => loaded.reduce((a, b) => a + b, 0);
+  const tick2 = setInterval(() => {
+    const now = performance.now() - start;
+    if (now >= WARMUP) { if (warmAt === null) { warmAt = now; warmBytes = sum() + done; } else live = mbps(sum() + done - warmBytes, now - warmAt); $('speed').textContent = fmtM(live); }
+    setPhase('Upload', 65 + Math.min(now / UL_MS, 1) * 35);
+  }, 200);
+  const stopT = setTimeout(() => { stop = true; xhrs.forEach(x => x.abort()); }, UL_MS);
+  const worker = idx => new Promise(res => {
+    const send = () => {
+      if (stop) return res();
+      const x = new XMLHttpRequest(); xhrs.push(x);
+      x.open('POST', UP + '?r=' + Math.random());
+      x.upload.onprogress = e => { loaded[idx] = e.loaded; };
+      x.onload = () => { done += loaded[idx]; loaded[idx] = 0; send(); };
+      x.onerror = x.onabort = () => res();
+      x.send(blob);
+    };
+    send();
+  });
+  await Promise.all(Array.from({ length: STREAMS }, (_, i) => worker(i)));
+  clearTimeout(stopT); clearInterval(tick2);
+  const end = performance.now() - start, tot = sum() + done;
+  addUsage(0, tot, 0);
+  return warmAt === null || end - warmAt < 1000 ? mbps(tot, end) : mbps(tot - warmBytes, end - warmAt);
+}
+const loadH = () => load('zin-speed-history', []);
+const saveH = h => save('zin-speed-history', h.slice(0, 30));
+function renderH(){
+  const h = loadH();
+  $('hist').innerHTML = h.length
+    ? '<div class="item"><span>Time</span><span>Down</span><span>Up</span><span>Ping</span></div>' +
+      h.map(r => `<div class="item"><span>${new Date(r.t).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><span>${fmtM(r.dl)}</span><span>${fmtM(r.ul)}</span><span>${r.ping.toFixed(0)} ms</span></div>`).join('')
+    : '<div class="empty">No tests yet.</div>';
+}
+$('clearTests').onclick = () => { saveH([]); renderH(); };
+$('go').onclick = async () => {
+  if (testRunning) return;
+  if (!navigator.onLine) { setPhase('You are offline', 0); return; }
+  testRunning = true; $('go').disabled = true; $('go').textContent = 'Testing…';
+  ['ping', 'jitter', 'dl', 'ul'].forEach(i => $(i).textContent = '–'); $('speed').textContent = '0.0';
+  try {
+    const p = await pingTest();
+    $('ping').textContent = p.ping.toFixed(0); $('jitter').textContent = p.jitter.toFixed(1);
+    const dl = await downloadTest(); $('dl').textContent = fmtM(dl); $('speed').textContent = '0.0';
+    const ul = await uploadTest(); $('ul').textContent = fmtM(ul); $('speed').textContent = fmtM(dl);
+    setPhase('Done', 100);
+    const h = loadH(); h.unshift({ t: Date.now(), dl, ul, ping: p.ping, jitter: p.jitter }); saveH(h); renderH();
+  } catch (e) { setPhase(e.message || 'Test failed', 0); }
+  testRunning = false; $('go').disabled = false; $('go').textContent = 'Start Test';
+};
+
+/* ================= install, SW, lifecycle ================= */
+let dp;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); dp = e; $('install').style.display = 'block'; });
+$('install').onclick = async () => { if (!dp) return; dp.prompt(); await dp.userChoice; dp = null; $('install').style.display = 'none'; };
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); else setAwake(); });
+addEventListener('pagehide', flush);
+
+/* ================= init ================= */
+renderH(); syncSettingsUI(); applySettings(); renderLive(); renderToday();
+if (S.autostart) startMon();
+</script>
+</body>
+</html>
